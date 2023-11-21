@@ -9,7 +9,7 @@ const bodyParser = require("body-parser");
 const JWT_SECRET =
   "hvdvay6ert72839289()aiyg8t87qt723932csc9797whjhcsc9(45900)93883uhefiuh78ttq3ifi78272jbkj?[]]pou89ywe";
 const mongoUrl =
-  "mongodb://localhost:27017/EPDS"
+  "mongodb://0.0.0.0:27017/EPDS"
 
 //Creating Express Server
 const app = express();
@@ -171,7 +171,7 @@ app.post("/login-user", async (req, res) => {
     return res.json({ error: "User Not found" });
   }
   if (await bcrypt.compare(password, user.password)) {
-    const token = jwt.sign({ uid: user.uid, role: user.role }, JWT_SECRET, { expiresIn: '30m' });
+    const token = jwt.sign({ uid: user.uid, role: user.role }, JWT_SECRET, { expiresIn: '2m' });
 
     if (res.status(201)) {
       return res.json({
@@ -179,7 +179,8 @@ app.post("/login-user", async (req, res) => {
         tokenAssign: token
       });
     } else {
-      return res.json({ error: "error" });
+      //return res.json({ error: "error" });
+      return res.json({ error: "Username or Password is Incorrect", status: "error" });
     }
   }
   res.json({ status: "error", error: "Invalid Password" });
