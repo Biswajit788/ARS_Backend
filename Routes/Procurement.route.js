@@ -87,6 +87,7 @@ procurementRoute.route('/updateItem/:id').post(function (req, res){
             data.category = req.body.category;
             data.cate_others = req.body.cate_others;
             data.mode = req.body.mode;
+            data.itemLoc = req.body.itemLoc;
             data.remarks = req.body.remarks;
 
             data.save()

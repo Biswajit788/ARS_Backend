@@ -118,6 +118,7 @@ app.post("/create", async (req, res) => {
     category,
     cate_others,
     mode,
+    itemLoc,
     remarks,
     created_by
   } = req.body;
@@ -152,6 +153,7 @@ app.post("/create", async (req, res) => {
         category,
         cate_others,
         mode,
+        itemLoc,
         remarks,
         created_by,
       });
@@ -171,7 +173,7 @@ app.post("/login-user", async (req, res) => {
     return res.json({ error: "User Not found" });
   }
   if (await bcrypt.compare(password, user.password)) {
-    const token = jwt.sign({ uid: user.uid, role: user.role }, JWT_SECRET, { expiresIn: '2m' });
+    const token = jwt.sign({ uid: user.uid, role: user.role }, JWT_SECRET);
 
     if (res.status(201)) {
       return res.json({
