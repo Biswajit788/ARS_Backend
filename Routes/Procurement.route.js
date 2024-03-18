@@ -5,37 +5,66 @@ const procurementRoute = express.Router();
 let procurementModel = require('../models/procurementData');
 
 // To get list of Procurement (Admin User)
-procurementRoute.route('/').get(function (req, res) {
-        procurementModel.find(function (err, data) {
+/* procurementRoute.route('/').get(function (req, res) {
+    procurementModel.find(function (err, data) {
         if (err) {
-            console.log("🚀 ~ file: Procurement.route.js ~ line 12 ~ err", err);  
+            console.log("🚀 ~ file: Procurement.route.js ~ line 12 ~ err", err);
         }
         else {
             res.json(data);
         }
     });
-});
+}); */
 
-// To get list of Procurement (Normal User)
 procurementRoute.route('/').post(function (req, res) {
     const filter = req.body;
     const projectFilter = filter.project;
     const deptFilter = filter.dept;
-    //console.log("🚀 ~ file: Procurement.route.js ~ line 11 ~ filter", filter.project)
-    procurementModel.find({project: projectFilter, dept: deptFilter},function (err, data) {
+    const roleFilter = filter.role;
+
+    if(roleFilter === "Admin"){
+        procurementModel.find({ project: projectFilter }, function (err, data) {
+            if (err) {
+                console.log("🚀 ~ file: Procurement.route.js ~ line 12 ~ err", err);
+            }
+            else {
+                res.json(data);
+            }
+        });
+    }
+    else{
+        procurementModel.find({ project: projectFilter, dept: deptFilter }, function (err, data) {
+            if (err) {
+                console.log("🚀 ~ file: Procurement.route.js ~ line 12 ~ err", err);
+            }
+            else {
+                res.json(data);
+            }
+        });
+    }
+    
+});
+
+// To get list of Procurement (Normal User)
+/* procurementRoute.route('/').post(function (req, res) {
+    const filter = req.body;
+    const projectFilter = filter.project;
+    const deptFilter = filter.dept;
+    console.log("🚀 ~ file: Procurement.route.js ~ line 11 ~ filter", filter.project)
+    procurementModel.find({ project: projectFilter, dept: deptFilter }, function (err, data) {
         if (err) {
-            console.log("🚀 ~ file: Procurement.route.js ~ line 12 ~ err", err);  
+            console.log("🚀 ~ file: Procurement.route.js ~ line 12 ~ err", err);
         }
         else {
             res.json(data);
         }
     });
-});
+}); */
 
 // To Add New Item
 
-procurementRoute.route('/addItem').post(function (req, res){
-    
+procurementRoute.route('/addItem').post(function (req, res) {
+
     let data = new procurementModel(req.body);
     data.save()
         .then(response => {
@@ -55,11 +84,11 @@ procurementRoute.route('/editItem/:id').get(function (req, res) {
     });
 });
 
-// To Update User details
+// To Update Item details
 
-procurementRoute.route('/updateItem/:id').post(function (req, res){
+procurementRoute.route('/updateItem/:id').post(function (req, res) {
 
-    procurementModel.findById(req.params.id, function (err, data){
+    procurementModel.findById(req.params.id, function (err, data) {
         if (!data) {
             return next(new Error('Unable to find Item with this ID'));
         } else {
@@ -101,6 +130,22 @@ procurementRoute.route('/updateItem/:id').post(function (req, res){
     });
 });
 
+//To mark Item for Transfer
+procurementRoute.route('/markItem/:id').get(function (req, res) {
+    procurementModel.findByIdAndUpdate({ _id: req.params.id }, { status: '1' }, function (err, data) {
+        if(err){
+            console.log(err);
+        }else{
+            if(data.status != 0){
+                res.sendStatus(201);
+            }else{
+                res.sendStatus(200);
+            }
+        }
+
+    });
+});
+
 // To Delete the Item
 
 procurementRoute.route('/deleteItem/:id').get(function (req, res) {
@@ -111,5 +156,34 @@ procurementRoute.route('/deleteItem/:id').get(function (req, res) {
             res.json('Item Deleted Successfully');
     });
 });
+
+// To get list of Pending Marked Transfer Item 
+procurementRoute.route('/pendingTransfer').get(function (req, res) {
+    procurementModel.find({ status: "1" }, function (err, data) {
+        if (err) {
+            console.log(err);
+        }
+        else {
+            res.json(data);
+        }
+    });
+});
+
+//To remove Item from TransferList
+procurementRoute.route('/removeTransferItemList/:id').get(function (req, res) {
+    procurementModel.findByIdAndUpdate({ _id: req.params.id }, { status: '0' }, function (err, data) {
+        if(err){
+            console.log(err);
+        }
+        else{
+            if(data.status != 0){
+                res.sendStatus(200);
+            }else{
+                res.sendStatus(201);
+            }
+        }
+    });
+});
+
 
 module.exports = procurementRoute;

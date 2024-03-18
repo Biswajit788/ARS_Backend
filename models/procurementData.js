@@ -29,6 +29,7 @@ const ProcurementDataSchema = new mongoose.Schema(
         reason: String, 
         remarks: String,
         created_by: String,
+        status: {type: Number, unique: true},
     },
     {
         timestamps: true,

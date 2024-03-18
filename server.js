@@ -5,6 +5,9 @@ const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const bodyParser = require("body-parser");
+const config = require('config');
+const port = config.get('server.port');
+const host = config.get('server.host');
 
 const JWT_SECRET =
   "hvdvay6ert72839289()aiyg8t87qt723932csc9797whjhcsc9(45900)93883uhefiuh78ttq3ifi78272jbkj?[]]pou89ywe";
@@ -39,7 +42,7 @@ app.use(bodyParser.json());
 app.use(cors());
 
 //Setup Server Port
-const port = process.env.PORT || 5000;
+//const port = process.env.PORT || 5000;
 
 //Routes Configuration
 app.use('/users', userRoutes);
@@ -48,8 +51,8 @@ app.use('/admin/items', procurementRoutes);
 app.use('/user/items', procurementRoutes);
 
 //Starting our Express Server
-const server = app.listen(port, function () {
-  console.log('Server listening on Port :' + port);
+const server = app.listen(port, host, function () {
+  console.log(`Server is running on ${host}:${server.address().port}`);
 });
 
 
@@ -122,43 +125,43 @@ app.post("/create", async (req, res) => {
     remarks,
     created_by
   } = req.body;
-  
+
   try {
     const oldOrder = await Procurement.findOne({ order_no });
-      if (oldOrder) {
-        return res.json({ error: "Document Already Exist", status: "error", message: order_no });
-      }
-      await Procurement.create({
-        project,
-        dept,
-        description,
-        qty,
-        model,
-        serial,
-        part_no,
-        asset_id,
-        additional_info,
-        supplier,
-        vendoradd,
-        condition1,
-        reg_no,
-        condition2,
-        condition5,
-        pan,
-        condition4,
-        reason,
-        order_no,
-        order_dt,
-        price,
-        category,
-        cate_others,
-        mode,
-        itemLoc,
-        remarks,
-        created_by,
-      });
-      res.send({ status: "Success" });
-    
+    if (oldOrder) {
+      return res.json({ error: "Document Already Exist", status: "error", message: order_no });
+    }
+    await Procurement.create({
+      project,
+      dept,
+      description,
+      qty,
+      model,
+      serial,
+      part_no,
+      asset_id,
+      additional_info,
+      supplier,
+      vendoradd,
+      condition1,
+      reg_no,
+      condition2,
+      condition5,
+      pan,
+      condition4,
+      reason,
+      order_no,
+      order_dt,
+      price,
+      category,
+      cate_others,
+      mode,
+      itemLoc,
+      remarks,
+      created_by,
+    });
+    res.send({ status: "Success" });
+
   } catch (error) {
     res.send({ status: "error" });
   }
@@ -169,16 +172,24 @@ app.post("/create", async (req, res) => {
 app.post("/login-user", async (req, res) => {
   const { uid, password } = req.body;
   const user = await User.findOne({ uid });
+
   if (!user) {
-    return res.json({ error: "User Not found" });
+    return res.json({ 
+      error: "User Not found" 
+    });
   }
-  if (await bcrypt.compare(password, user.password)) {
+  if(user.status === 0 || user.status === null){
+    return res.json({
+      status: "inactive",
+    });
+  }
+  else if (await bcrypt.compare(password, user.password)) {
     const token = jwt.sign({ uid: user.uid, role: user.role }, JWT_SECRET);
 
     if (res.status(201)) {
       return res.json({
         status: "ok",
-        tokenAssign: token
+        tokenAssign: token,
       });
     } else {
       //return res.json({ error: "error" });
@@ -204,7 +215,7 @@ app.post("/userData", async (req, res) => {
         const userid = user.uid;
         User.findOne({ uid: userid })
           .then((data) => {
-            res.send({ status: "ok", data: data });
+            res.send({ status: "ok", data: data  });
           })
           .catch((error) => {
             res.send({ status: "error", data: error });

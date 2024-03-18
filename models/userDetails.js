@@ -10,7 +10,8 @@ const UserDetailsSchema = new mongoose.Schema(
     project: String,
     dept: String,
     role: String,
-    desgn: String
+    desgn: String,
+    status: {type: Number, unique: true},
   },
   {
     collection: "users",

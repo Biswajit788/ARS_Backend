@@ -67,6 +67,7 @@ userRoute.route('/updateUser/:id').patch(function (req, res){
             user.dept = req.body.dept;
             //user.password = await bcrypt.hash(req.body.password, salt);
             user.password = req.body.password;
+            user.status = req.body.status;
             user.save()
                 .then(usr => {
                     res.json('User Updated Successfully');
@@ -86,6 +87,7 @@ userRoute.route('/updateUser/:id').patch(function (req, res){
             user.project = req.body.project;
             user.dept = req.body.dept;
             user.password = await bcrypt.hash(req.body.password, salt);
+            user.status = req.body.status;
             user.save()
                 .then(usr => {
                     res.json('User Updated Successfully');
