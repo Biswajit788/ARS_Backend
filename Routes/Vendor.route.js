@@ -8,7 +8,7 @@ let vendorModel = require('../models/vendorDetails');
 
 vendorRoute.route('/').get(async (req, res) => {
     try {
-        const vendors = await vendorModel.find().sort({ uid: -1 });
+        const vendors = await vendorModel.find().sort({ vName: 1 });
         res.json(vendors);
     } catch (err) {
         console.log("🚀 ~ file: User.route.js ~ line 11 ~ err", err);
@@ -16,19 +16,27 @@ vendorRoute.route('/').get(async (req, res) => {
     }
 });
 
-// To Add New User
 
+// To Add New User
 vendorRoute.route('/addVendor').post(async (req, res) => {
     try {
         const body = req.body;
+        const { vGstin } = body; // Destructure vGstin from the request body
+
+        // Check if a vendor with the provided vGstin already exists
+        const vendorIsExistCheck = await vendorModel.findOne({ vGstin });
+
+        if (vendorIsExistCheck) {
+            return res.status(400).json({ message: `Vendor with GSTIN ${vGstin} already exist` });
+        }
+
+        // If vendor does not exist, save it to the database
         const vendor = new vendorModel(body);
-
         await vendor.save();
-
-        res.status(200).json({ user: 'Vendor Added Successfully' });
+        res.status(200).json({ message: 'Vendor Added Successfully' });
     } catch (err) {
         console.error(err);
-        res.status(400).send("Something went wrong");
+        res.status(500).send("Internal Server Error");
     }
 });
 

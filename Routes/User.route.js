@@ -23,17 +23,24 @@ userRoute.route('/').get(async (req, res) => {
 userRoute.route('/addUser').post(async (req, res) => {
     try {
         const body = req.body;
+        const { uid } = body;
+
+        const userIsExistCheck = await userModel.findOne({ uid });
+        if (userIsExistCheck) {
+            return res.status(400).json({ message: `User with code ${uid} already exist` });
+        }
+
+        // If user does not exist, save it to the database
         const user = new userModel(body);
         const salt = await bcrypt.genSalt(10);
-
         user.password = await bcrypt.hash(user.password, salt);
 
         await user.save();
 
-        res.status(200).json({ user: 'User Added Successfully' });
+        res.status(200).json({ message: 'User Added Successfully' });
     } catch (err) {
         console.error(err);
-        res.status(400).send("Something went wrong");
+        res.status(500).send("Internal Server Error");
     }
 });
 
