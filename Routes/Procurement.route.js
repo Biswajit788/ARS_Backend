@@ -4,186 +4,165 @@ const procurementRoute = express.Router();
 
 let procurementModel = require('../models/procurementData');
 
-// To get list of Procurement (Admin User)
-/* procurementRoute.route('/').get(function (req, res) {
-    procurementModel.find(function (err, data) {
-        if (err) {
-            console.log("🚀 ~ file: Procurement.route.js ~ line 12 ~ err", err);
-        }
-        else {
-            res.json(data);
-        }
-    });
-}); */
+// To get list of Procurement (Role Based)
 
-procurementRoute.route('/').post(function (req, res) {
+procurementRoute.route('/').post(async function (req, res) {
     const filter = req.body;
     const projectFilter = filter.project;
     const deptFilter = filter.dept;
     const roleFilter = filter.role;
 
-    if(roleFilter === "Admin"){
-        procurementModel.find({ project: projectFilter }, function (err, data) {
-            if (err) {
-                console.log("🚀 ~ file: Procurement.route.js ~ line 12 ~ err", err);
-            }
-            else {
-                res.json(data);
-            }
-        });
+    try {
+        let query;
+        if (roleFilter === "Admin") {
+            query = { project: projectFilter };
+        } else {
+            query = { project: projectFilter, dept: deptFilter };
+        }
+
+        const data = await procurementModel.find(query).sort({ _id: -1, createdAt: -1 });
+        res.json(data);
+    } catch (err) {
+        console.error("🚀 ~ file: Procurement.route.js ~ line 12 ~ err", err);
+        res.status(500).send("An error occurred while fetching the data.");
     }
-    else{
-        procurementModel.find({ project: projectFilter, dept: deptFilter }, function (err, data) {
-            if (err) {
-                console.log("🚀 ~ file: Procurement.route.js ~ line 12 ~ err", err);
-            }
-            else {
-                res.json(data);
-            }
-        });
-    }
-    
+
 });
 
-// To get list of Procurement (Normal User)
-/* procurementRoute.route('/').post(function (req, res) {
-    const filter = req.body;
-    const projectFilter = filter.project;
-    const deptFilter = filter.dept;
-    console.log("🚀 ~ file: Procurement.route.js ~ line 11 ~ filter", filter.project)
-    procurementModel.find({ project: projectFilter, dept: deptFilter }, function (err, data) {
-        if (err) {
-            console.log("🚀 ~ file: Procurement.route.js ~ line 12 ~ err", err);
-        }
-        else {
-            res.json(data);
-        }
-    });
-}); */
 
 // To Add New Item
 
-procurementRoute.route('/addItem').post(function (req, res) {
-
-    let data = new procurementModel(req.body);
-    data.save()
-        .then(response => {
-            res.status(200).json({ 'message': 'New Item Added Successfully' });
-        })
-        .catch(err => {
-            res.status(400).send("Something went wrong. Please try again later!");
-        });
+procurementRoute.route('/addItem').post(async (req, res) => {
+    try {
+        let data = new procurementModel(req.body);
+        await data.save();
+        res.status(200).json({ 'message': 'New Item Added Successfully' });
+    } catch (err) {
+        console.error("🚀 ~ file: Procurement.route.js ~ line 12 ~ err", err);
+        res.status(400).send("Something went wrong. Please try again later!");
+    }
 });
 
 // To get Item details by ID
 
-procurementRoute.route('/editItem/:id').get(function (req, res) {
-    let id = req.params.id;
-    procurementModel.findById(id, function (err, data) {
+procurementRoute.route('/editItem/:id').get(async (req, res) => {
+    const id = req.params.id;
+    try {
+        const data = await procurementModel.findById(id);
         res.json(data);
-    });
+    } catch (err) {
+        console.error("Error fetching item by ID:", err);
+        res.status(500).json({ error: 'An error occurred while fetching the item' });
+    }
 });
 
 // To Update Item details
 
-procurementRoute.route('/updateItem/:id').post(function (req, res) {
+procurementRoute.route('/updateItem/:id').post(async (req, res) => {
+    try {
+        const data = await procurementModel.findById(req.params.id);
 
-    procurementModel.findById(req.params.id, function (err, data) {
         if (!data) {
-            return next(new Error('Unable to find Item with this ID'));
-        } else {
-            data.project = req.body.project;
-            data.dept = req.body.dept;
-            data.description = req.body.description;
-            data.qty = req.body.qty;
-            data.model = req.body.model;
-            data.serial = req.body.serial;
-            data.part_no = req.body.part_no;
-            data.asset_id = req.body.asset_id;
-            data.additional_info = req.body.additional_info;
-            data.supplier = req.body.supplier;
-            data.vendoradd = req.body.vendoradd;
-            data.condition1 = req.body.condition1;
-            data.reg_no = req.body.reg_no;
-            data.condition2 = req.body.condition2;
-            data.condition5 = req.body.condition5;
-            data.pan = req.body.pan;
-            data.condition4 = req.body.condition4;
-            data.reason = req.body.reason;
-            data.order_no = req.body.order_no;
-            data.order_dt = req.body.order_dt;
-            data.price = req.body.price;
-            data.category = req.body.category;
-            data.cate_others = req.body.cate_others;
-            data.mode = req.body.mode;
-            data.itemLoc = req.body.itemLoc;
-            data.remarks = req.body.remarks;
-
-            data.save()
-                .then(response => {
-                    res.json('Item Updated Successfully');
-                })
-                .catch(err => {
-                    res.status(400).send('Unable to Update Item');
-                });
+            return res.status(404).json({ error: 'Unable to find Item with this ID' });
         }
-    });
+        data.project = req.body.project;
+        data.dept = req.body.dept;
+        data.description = req.body.description;
+        data.category = req.body.category;
+        data.cate_others = req.body.cate_others;
+        data.warranty = req.body.warranty;
+        data.installation_dt = req.body.installation_dt;
+        data.model = req.body.model;
+        data.serial = req.body.serial;
+        data.part_no = req.body.part_no;
+        data.asset_id = req.body.asset_id;
+        data.additional_info = req.body.additional_info;
+        data.supplier = req.body.supplier;
+        data.vendoradd = req.body.vendoradd;
+        data.vendor_category = req.body.vendor_category;
+        data.reg_no = req.body.reg_no;
+        data.condition2 = req.body.condition2;
+        data.condition5 = req.body.condition5;
+        data.gstin = req.body.gstin;
+        data.reason = req.body.reason;
+        data.order_no = req.body.order_no;
+        data.order_dt = req.body.order_dt;
+        data.price = req.body.price;
+        data.mode = req.body.mode;
+        data.itemUser = req.body.itemUser;
+        data.itemLoc = req.body.itemLoc;
+        data.remarks = req.body.remarks;
+
+        await data.save();
+        res.json('Item Updated Successfully');
+    } catch (err) {
+        res.status(400).send('Unable to Update Item');
+    }
 });
 
 //To mark Item for Transfer
-procurementRoute.route('/markItem/:id').get(function (req, res) {
-    procurementModel.findByIdAndUpdate({ _id: req.params.id }, { status: '1' }, function (err, data) {
-        if(err){
-            console.log(err);
+procurementRoute.route('/markItem/:id').get(async (req, res) => {
+    try {
+        const item = await procurementModel.findById({_id: req.params.id});
+        if(item.status != '0'){
+            res.sendStatus(201);
         }else{
-            if(data.status != 0){
-                res.sendStatus(201);
-            }else{
+            const updatedItem = await procurementModel.findByIdAndUpdate({_id: req.params.id}, { status: '1' }, { new: true });
+            if(updatedItem){
                 res.sendStatus(200);
             }
         }
-
-    });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'An error occurred while marking the item status' });
+    }
 });
 
 // To Delete the Item
 
-procurementRoute.route('/deleteItem/:id').get(function (req, res) {
-    procurementModel.findByIdAndRemove({ _id: req.params.id }, function (err, data) {
-        if (err)
-            res.json(err);
-        else
-            res.json('Item Deleted Successfully');
-    });
-});
+procurementRoute.route('/deleteItem/:id').get(async (req, res) => {
+    try {
+      const result = await procurementModel.findByIdAndDelete({_id: req.params.id});
+      if (!result) {
+        return res.status(404).json({ error: 'Item not found' });
+      }
+      res.json({ message: 'Item Deleted Successfully' });
+    } catch (err) {
+      console.error( err);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
 
 // To get list of Pending Marked Transfer Item 
-procurementRoute.route('/pendingTransfer').get(function (req, res) {
-    procurementModel.find({ status: "1" }, function (err, data) {
-        if (err) {
-            console.log(err);
-        }
-        else {
-            res.json(data);
-        }
-    });
+
+procurementRoute.route('/pendingTransfer').get(async (req, res) => {
+    try {
+        const data = await procurementModel.find({ status: "1" });
+        res.json(data);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'An error occurred while fetching pending transfers' });
+    }
 });
 
 //To remove Item from TransferList
-procurementRoute.route('/removeTransferItemList/:id').get(function (req, res) {
-    procurementModel.findByIdAndUpdate({ _id: req.params.id }, { status: '0' }, function (err, data) {
-        if(err){
-            console.log(err);
-        }
-        else{
-            if(data.status != 0){
-                res.sendStatus(200);
-            }else{
-                res.sendStatus(201);
-            }
-        }
-    });
-});
 
+procurementRoute.route('/removeTransferItemList/:id').get(async (req, res) => {
+    try {
+        const data = await procurementModel.findByIdAndUpdate(
+            { _id: req.params.id },
+            { status: '0' },
+        );
+
+        if (data && data.status !== 0) {
+            res.sendStatus(200);
+        } else {
+            res.sendStatus(201);
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'An error occurred while updating the item status' });
+    }
+});
 
 module.exports = procurementRoute;

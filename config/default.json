@@ -1,6 +1,10 @@
 {
-    "server": {
-        "host": "10.3.0.57",
-        "port": 5000
-    }
+  "server": {
+    "host": "10.3.0.57",
+    "port": 5000
+  },
+  "mongodb": {
+    "url": "mongodb://10.3.0.57:27017/EPDS"
+  },
+  "jwtSecret": "hvdvay6ert72839289()aiyg8t87qt723932csc9797whjhcsc9(45900)93883uhefiuh78ttq3ifi78272jbkj?[]]pou89ywe"
 }
