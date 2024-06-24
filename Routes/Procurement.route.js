@@ -29,18 +29,39 @@ procurementRoute.route('/').post(async function (req, res) {
 
 });
 
-
 // To Add New Item
-
-procurementRoute.route('/addItem').post(async (req, res) => {
+procurementRoute.route('/create').post(async (req, res) => {
+    const {
+        project, dept, description, category, cate_others, warranty, installation_dt, model, serial, part_no, asset_id, additional_info, supplier,
+        vendoradd, vendor_category, reg_no, condition2, condition5, gstin, reason, order_no, order_dt, price, mode, itemUser,
+        itemLoc, remarks, created_by, status,
+    } = req.body;
     try {
-        let data = new procurementModel(req.body);
-        await data.save();
-        res.status(200).json({ 'message': 'New Item Added Successfully' });
-    } catch (err) {
-        console.error("🚀 ~ file: Procurement.route.js ~ line 12 ~ err", err);
-        res.status(400).send("Something went wrong. Please try again later!");
-    }
+        if (category === "Hardware") {
+          const count = await Procurement.countDocuments({ asset_id, category });
+    
+          if (count !== 0) {
+            return res.json({ error: "Document Already Exist", status: "exist", message: `Asset Id no. ${asset_id} for category ${category} already exist.` });
+          } else {
+            await Procurement.create({
+              project, dept, description, category, cate_others, warranty, installation_dt, model, serial, part_no, asset_id, additional_info,
+              supplier, vendoradd, vendor_category, reg_no, condition2, condition5, gstin, reason, order_no,
+              order_dt, price, mode, itemUser, itemLoc, remarks, created_by, status,
+            });
+            res.send({ status: "Success" });
+          }
+        } else {
+          await Procurement.create({
+            project, dept, description, category, cate_others, warranty, installation_dt, model, serial, part_no, asset_id, additional_info,
+            supplier, vendoradd, vendor_category, reg_no, condition2, condition5, gstin, reason, order_no,
+            order_dt, price, mode, itemUser, itemLoc, remarks, created_by, status,
+          });
+          res.send({ status: "Success" });
+        }
+      } catch (err) {
+        console.error("Error creating procurement record:", err);
+        res.status(500).send("An error occurred while creating the procurement record");
+      }
 });
 
 // To get Item details by ID
@@ -103,12 +124,12 @@ procurementRoute.route('/updateItem/:id').post(async (req, res) => {
 //To mark Item for Transfer
 procurementRoute.route('/markItem/:id').get(async (req, res) => {
     try {
-        const item = await procurementModel.findById({_id: req.params.id});
-        if(item.status != '0'){
+        const item = await procurementModel.findById({ _id: req.params.id });
+        if (item.status != '0') {
             res.sendStatus(201);
-        }else{
-            const updatedItem = await procurementModel.findByIdAndUpdate({_id: req.params.id}, { status: '1' }, { new: true });
-            if(updatedItem){
+        } else {
+            const updatedItem = await procurementModel.findByIdAndUpdate({ _id: req.params.id }, { status: '1' }, { new: true });
+            if (updatedItem) {
                 res.sendStatus(200);
             }
         }
@@ -122,16 +143,16 @@ procurementRoute.route('/markItem/:id').get(async (req, res) => {
 
 procurementRoute.route('/deleteItem/:id').get(async (req, res) => {
     try {
-      const result = await procurementModel.findByIdAndDelete({_id: req.params.id});
-      if (!result) {
-        return res.status(404).json({ error: 'Item not found' });
-      }
-      res.json({ message: 'Item Deleted Successfully' });
+        const result = await procurementModel.findByIdAndDelete({ _id: req.params.id });
+        if (!result) {
+            return res.status(404).json({ error: 'Item not found' });
+        }
+        res.json({ message: 'Item Deleted Successfully' });
     } catch (err) {
-      console.error( err);
-      res.status(500).json({ error: 'Internal Server Error' });
+        console.error(err);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
-  });
+});
 
 // To get list of Pending Marked Transfer Item 
 

@@ -6,6 +6,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const bodyParser = require("body-parser");
 const config = require('config');
+const seedAdminUser = require('./seeders/adminUserSeeder');
 const port = config.get('server.port');
 const host = config.get('server.host');
 
@@ -20,13 +21,19 @@ mongoose.Promise = global.Promise;
 
 
 //Connect Mongodb Database
+const connectToDatabase = async () => {
+  try {
+    await mongoose.connect(mongoUrl);
+    console.log("Successfully connected to MongoDB database");
+    await seedAdminUser();
+  } catch (error) {
+    console.error('Error connecting to the database', error);
+    process.exit(1); // Exit the process with failure
+  }
+};
 
-mongoose
-  .connect(mongoUrl)
-  .then(() => {
-    console.log("Connected to MongoDB database");
-  })
-  .catch((e) => console.log('There is problem when connecting database' + e));
+connectToDatabase();
+
 
 //All the Express routes
 const userRoutes = require('./Routes/User.route');
@@ -56,9 +63,7 @@ const server = app.listen(port, host, function () {
 });
 
 //Creating or Populating User table in the Database
-
 require("./models/userDetails");
-
 const User = mongoose.model("users");
 app.post("/register", async (req, res) => {
   const { fname, lname, email, uid, password, project, dept, role, desgn } = req.body;
@@ -88,47 +93,7 @@ app.post("/register", async (req, res) => {
   }
 });
 
-/*Creating or Populating Procurements table in the Database*/
-require("./models/procurementData");
-
-const Procurement = mongoose.model("procurements");
-app.post("/create", async (req, res) => {
-  const {
-    project, dept, description, category, cate_others, warranty, installation_dt, model, serial, part_no, asset_id, additional_info, supplier,
-    vendoradd, vendor_category, reg_no, condition2, condition5, gstin, reason, order_no, order_dt, price, mode, itemUser,
-    itemLoc, remarks, created_by, status,
-  } = req.body;
-
-  try {
-    if (category === "Hardware") {
-      const count = await Procurement.countDocuments({ asset_id, category });
-
-      if (count !== 0) {
-        return res.json({ error: "Document Already Exist", status: "exist", message: `Asset Id no. ${asset_id} for category ${category} already exist.` });
-      } else {
-        await Procurement.create({
-          project, dept, description, category, cate_others, warranty, installation_dt, model, serial, part_no, asset_id, additional_info,
-          supplier, vendoradd, vendor_category, reg_no, condition2, condition5, gstin, reason, order_no,
-          order_dt, price, mode, itemUser, itemLoc, remarks, created_by, status,
-        });
-        res.send({ status: "Success" });
-      }
-    } else {
-      await Procurement.create({
-        project, dept, description, category, cate_others, warranty, installation_dt, model, serial, part_no, asset_id, additional_info,
-        supplier, vendoradd, vendor_category, reg_no, condition2, condition5, gstin, reason, order_no,
-        order_dt, price, mode, itemUser, itemLoc, remarks, created_by, status,
-      });
-      res.send({ status: "Success" });
-    }
-  } catch (err) {
-    console.error("Error creating procurement record:", err);
-    res.status(500).send("An error occurred while creating the procurement record");
-  }
-});
-
 // Authenticating User to access application
-
 app.post("/login-user", async (req, res) => {
   try {
     const { uid, password } = req.body;
@@ -169,30 +134,4 @@ app.post("/login-user", async (req, res) => {
   } catch (error) {
     console.log("Server Internal Error", error);
   }
-});
-
-// Verifying User Token for continue access
-
-app.post("/userData", async (req, res) => {
-  const { token } = req.body;
-  try {
-    const user = jwt.verify(token, JWT_SECRET, function (err, user) {
-      if (err) {
-        console.log(err);
-        console.log('Current User Session Expired');
-        res.send({ status: "expired" });
-      }
-      else {
-        //console.log(user);
-        const userid = user.uid;
-        User.findOne({ uid: userid })
-          .then((data) => {
-            res.send({ status: "ok", data: data });
-          })
-          .catch((error) => {
-            res.send({ status: "error", data: error });
-          });
-      }
-    });
-  } catch (error) { }
 });

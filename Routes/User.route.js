@@ -32,8 +32,8 @@ userRoute.route('/addUser').post(async (req, res) => {
 
         // If user does not exist, save it to the database
         const user = new userModel(body);
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(user.password, salt);
+        //const salt = await bcrypt.genSalt(10);
+        //user.password = await bcrypt.hash(user.password, salt);
 
         await user.save();
 
@@ -64,7 +64,6 @@ userRoute.route('/editUser/:id').get(async (req, res) => {
 
 
 // To Update User details
-
 userRoute.route('/updateUser/:id').patch(async function (req, res, next) {
     try {
         const user = await userModel.findById(req.params.id);
@@ -73,30 +72,21 @@ userRoute.route('/updateUser/:id').patch(async function (req, res, next) {
             return next(new Error('Unable to find User with this ID'));
         }
 
-        // If the new password is the same as the old one
-        if (req.body.password === user.password) {
-            user.fname = req.body.fname;
-            user.lname = req.body.lname;
-            user.email = req.body.email;
-            user.uid = req.body.uid;
-            user.desgn = req.body.desgn;
-            user.role = req.body.role;
-            user.project = req.body.project;
-            user.dept = req.body.dept;
-            user.password = req.body.password;
-            user.status = req.body.status;
-        } else {
+        // Update user fields
+        user.fname = req.body.fname;
+        user.lname = req.body.lname;
+        user.email = req.body.email;
+        user.uid = req.body.uid;
+        user.desgn = req.body.desgn;
+        user.role = req.body.role;
+        user.project = req.body.project;
+        user.dept = req.body.dept;
+        user.status = req.body.status;
+
+        // Check if the password field is present in the request and if it has changed
+        if (req.body.password && req.body.password !== user.password) {
             const salt = await bcrypt.genSalt(10);
-            user.fname = req.body.fname;
-            user.lname = req.body.lname;
-            user.email = req.body.email;
-            user.uid = req.body.uid;
-            user.desgn = req.body.desgn;
-            user.role = req.body.role;
-            user.project = req.body.project;
-            user.dept = req.body.dept;
             user.password = await bcrypt.hash(req.body.password, salt);
-            user.status = req.body.status;
         }
 
         await user.save();
@@ -106,7 +96,6 @@ userRoute.route('/updateUser/:id').patch(async function (req, res, next) {
         res.status(400).send('Unable to Update User');
     }
 });
-
 
 // To Delete the User
 
