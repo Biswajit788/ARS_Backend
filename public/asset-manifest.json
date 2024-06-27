@@ -1,0 +1,27 @@
+{
+  "files": {
+    "main.css": "/static/css/main.a37a9f85.css",
+    "main.js": "/static/js/main.f80936bf.js",
+    "static/media/KaHEP.png": "/static/media/KaHEP.9c2724d3ad80995c2c76.png",
+    "static/media/KaHEP.jpeg": "/static/media/KaHEP.bc2862d31bfc0da6abf2.jpeg",
+    "static/media/shillong.jpg": "/static/media/shillong.e8f51cdaa281a93381f5.jpg",
+    "static/media/agtbps.png": "/static/media/agtbps.4c0d1a1d71a44ac2a417.png",
+    "static/media/controlroom.jpg": "/static/media/controlroom.5b2b8be4662783432da2.jpg",
+    "static/media/agbp.jpg": "/static/media/agbp.58cefd381cb38e665376.jpg",
+    "static/media/PLHPS.png": "/static/media/PLHPS.5a5a7ca302a30a620a75.png",
+    "static/media/PHEP.png": "/static/media/PHEP.feb3479b7978b5689e8a.png",
+    "static/media/agbps.png": "/static/media/agbps.d2fb7cf58f52120db2d5.png",
+    "static/media/TrHEP.png": "/static/media/TrHEP.ccf0f4eb5c3f86ed5789.png",
+    "static/media/DHEP.png": "/static/media/DHEP.cfb4724bcfc91a78c557.png",
+    "static/media/tgbps.png": "/static/media/tgbps.442d33b7c61177966f15.png",
+    "static/media/KHEP.png": "/static/media/KHEP.5db90f6c585526e61a9d.png",
+    "static/media/user.png": "/static/media/user.3b87c8990c94ad8d1aa5.png",
+    "index.html": "/index.html",
+    "main.a37a9f85.css.map": "/static/css/main.a37a9f85.css.map",
+    "main.f80936bf.js.map": "/static/js/main.f80936bf.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.a37a9f85.css",
+    "static/js/main.f80936bf.js"
+  ]
+}

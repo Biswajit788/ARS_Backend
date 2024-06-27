@@ -29,40 +29,39 @@ procurementRoute.route('/').post(async function (req, res) {
 
 });
 
+
 // To Add New Item
-procurementRoute.route('/create').post(async (req, res) => {
-    const {
-        project, dept, description, category, cate_others, warranty, installation_dt, model, serial, part_no, asset_id, additional_info, supplier,
-        vendoradd, vendor_category, reg_no, condition2, condition5, gstin, reason, order_no, order_dt, price, mode, itemUser,
-        itemLoc, remarks, created_by, status,
-    } = req.body;
+
+procurementRoute.route('/addItem').post(async (req, res) => {
     try {
+        let data = new procurementModel(req.body);
+        
+        // Ensure asset_id and category are defined
+        const { asset_id, category } = data;
+
         if (category === "Hardware") {
-          const count = await Procurement.countDocuments({ asset_id, category });
-    
-          if (count !== 0) {
-            return res.json({ error: "Document Already Exist", status: "exist", message: `Asset Id no. ${asset_id} for category ${category} already exist.` });
-          } else {
-            await Procurement.create({
-              project, dept, description, category, cate_others, warranty, installation_dt, model, serial, part_no, asset_id, additional_info,
-              supplier, vendoradd, vendor_category, reg_no, condition2, condition5, gstin, reason, order_no,
-              order_dt, price, mode, itemUser, itemLoc, remarks, created_by, status,
-            });
-            res.send({ status: "Success" });
-          }
+            const isExistCheck = await procurementModel.countDocuments({ asset_id, category });
+
+            if (isExistCheck !== 0) {
+                return res.status(409).json({ 
+                    errorMsg: "Document Already Exist", 
+                    status: "exist", 
+                    message: `Asset Id no. ${asset_id} for category ${category} already exists.` 
+                });
+            } else {
+                await data.save();
+                return res.status(200).json({ status: 'success', message: 'New Item Added Successfully' });
+            }
         } else {
-          await Procurement.create({
-            project, dept, description, category, cate_others, warranty, installation_dt, model, serial, part_no, asset_id, additional_info,
-            supplier, vendoradd, vendor_category, reg_no, condition2, condition5, gstin, reason, order_no,
-            order_dt, price, mode, itemUser, itemLoc, remarks, created_by, status,
-          });
-          res.send({ status: "Success" });
+            await data.save();
+            return res.status(200).json({ status: 'success', message: 'New Item Added Successfully' });
         }
-      } catch (err) {
-        console.error("Error creating procurement record:", err);
-        res.status(500).send("An error occurred while creating the procurement record");
-      }
+    } catch (err) {
+        console.error("Error occurred while creating the procurement record:", err.message);
+        res.status(500).send({ error: "An error occurred while creating the procurement record", details: err.message });
+    }
 });
+
 
 // To get Item details by ID
 

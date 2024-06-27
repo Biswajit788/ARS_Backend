@@ -26,6 +26,7 @@ userRoute.route('/addUser').post(async (req, res) => {
         const { uid } = body;
 
         const userIsExistCheck = await userModel.findOne({ uid });
+        
         if (userIsExistCheck) {
             return res.status(400).json({ message: `User with code ${uid} already exist` });
         }
@@ -82,12 +83,12 @@ userRoute.route('/updateUser/:id').patch(async function (req, res, next) {
         user.project = req.body.project;
         user.dept = req.body.dept;
         user.status = req.body.status;
-
+        user.password = req.body.password
         // Check if the password field is present in the request and if it has changed
-        if (req.body.password && req.body.password !== user.password) {
+       /*  if (req.body.password && req.body.password !== user.password) {
             const salt = await bcrypt.genSalt(10);
             user.password = await bcrypt.hash(req.body.password, salt);
-        }
+        } */
 
         await user.save();
         res.json('User Updated Successfully');
