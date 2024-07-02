@@ -1,16 +1,16 @@
 const express = require('express');
 const app = express();
 const procurementRoute = express.Router();
+const { authenticateToken, authorizeRole } = require('../authMiddleware');
 
 let procurementModel = require('../models/procurementData');
 
 // To get list of Procurement (Role Based)
 
-procurementRoute.route('/').post(async function (req, res) {
-    const filter = req.body;
-    const projectFilter = filter.project;
-    const deptFilter = filter.dept;
-    const roleFilter = filter.role;
+procurementRoute.route('/').post(authenticateToken, async function (req, res) {
+    const projectFilter = req.query.project;
+    const deptFilter = req.query.dept;
+    const roleFilter = req.query.role;
 
     try {
         let query;
@@ -26,13 +26,11 @@ procurementRoute.route('/').post(async function (req, res) {
         console.error("🚀 ~ file: Procurement.route.js ~ line 12 ~ err", err);
         res.status(500).send("An error occurred while fetching the data.");
     }
-
 });
-
 
 // To Add New Item
 
-procurementRoute.route('/addItem').post(async (req, res) => {
+procurementRoute.route('/addItem').post(authenticateToken, async (req, res) => {
     try {
         let data = new procurementModel(req.body);
         
@@ -65,7 +63,7 @@ procurementRoute.route('/addItem').post(async (req, res) => {
 
 // To get Item details by ID
 
-procurementRoute.route('/editItem/:id').get(async (req, res) => {
+procurementRoute.route('/editItem/:id').get(authenticateToken, async (req, res) => {
     const id = req.params.id;
     try {
         const data = await procurementModel.findById(id);
@@ -78,7 +76,7 @@ procurementRoute.route('/editItem/:id').get(async (req, res) => {
 
 // To Update Item details
 
-procurementRoute.route('/updateItem/:id').post(async (req, res) => {
+procurementRoute.route('/updateItem/:id').post(authenticateToken, async (req, res) => {
     try {
         const data = await procurementModel.findById(req.params.id);
 
@@ -121,7 +119,7 @@ procurementRoute.route('/updateItem/:id').post(async (req, res) => {
 });
 
 //To mark Item for Transfer
-procurementRoute.route('/markItem/:id').get(async (req, res) => {
+procurementRoute.route('/markItem/:id').get(authenticateToken, async (req, res) => {
     try {
         const item = await procurementModel.findById({ _id: req.params.id });
         if (item.status != '0') {
@@ -140,7 +138,7 @@ procurementRoute.route('/markItem/:id').get(async (req, res) => {
 
 // To Delete the Item
 
-procurementRoute.route('/deleteItem/:id').get(async (req, res) => {
+procurementRoute.route('/deleteItem/:id').get(authenticateToken, authorizeRole('Admin'), async (req, res) => {
     try {
         const result = await procurementModel.findByIdAndDelete({ _id: req.params.id });
         if (!result) {
@@ -155,7 +153,7 @@ procurementRoute.route('/deleteItem/:id').get(async (req, res) => {
 
 // To get list of Pending Marked Transfer Item 
 
-procurementRoute.route('/pendingTransfer').get(async (req, res) => {
+procurementRoute.route('/pendingTransfer').get(authenticateToken, authorizeRole('Admin'), async (req, res) => {
     try {
         const data = await procurementModel.find({ status: "1" });
         res.json(data);
@@ -167,7 +165,7 @@ procurementRoute.route('/pendingTransfer').get(async (req, res) => {
 
 //To remove Item from TransferList
 
-procurementRoute.route('/removeTransferItemList/:id').get(async (req, res) => {
+procurementRoute.route('/removeTransferItemList/:id').get(authenticateToken, authorizeRole('Admin'), async (req, res) => {
     try {
         const data = await procurementModel.findByIdAndUpdate(
             { _id: req.params.id },

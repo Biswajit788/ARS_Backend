@@ -1,12 +1,13 @@
 const express = require('express');
 const app = express();
 const vendorRoute = express.Router();
+const { authenticateToken, authorizeRole } = require('../authMiddleware');
 
 let vendorModel = require('../models/vendorDetails');
 
 // To get list of User
 
-vendorRoute.route('/').get(async (req, res) => {
+vendorRoute.route('/').get( authenticateToken, async (req, res) => {
     try {
         const vendors = await vendorModel.find().sort({ vName: 1 });
         res.json(vendors);
@@ -18,7 +19,7 @@ vendorRoute.route('/').get(async (req, res) => {
 
 
 // To Add New User
-vendorRoute.route('/addVendor').post(async (req, res) => {
+vendorRoute.route('/addVendor').post( authenticateToken, authorizeRole('Admin'), async (req, res) => {
     try {
         const body = req.body;
         const { vGstin } = body; // Destructure vGstin from the request body
@@ -43,7 +44,7 @@ vendorRoute.route('/addVendor').post(async (req, res) => {
 
 // To get User details by userID
 
-vendorRoute.route('/editVendor/:id').get(async (req, res) => {
+vendorRoute.route('/editVendor/:id').get( authenticateToken, authorizeRole('Admin'), async (req, res) => {
     try {
         const vendor = await vendorModel.findById(req.params.id);
 
@@ -61,7 +62,7 @@ vendorRoute.route('/editVendor/:id').get(async (req, res) => {
 
 // To Update User details
 
-vendorRoute.route('/updateVendor/:id').patch(async function (req, res, next) {
+vendorRoute.route('/updateVendor/:id').patch( authenticateToken, authorizeRole('Admin'), async function (req, res, next) {
     try {
         const vendor = await vendorModel.findById(req.params.id);
 
@@ -87,7 +88,7 @@ vendorRoute.route('/updateVendor/:id').patch(async function (req, res, next) {
 
 // To Delete the User
 
-vendorRoute.route('/deleteVendor/:id').get(async (req, res) => {
+vendorRoute.route('/deleteVendor/:id').get( authenticateToken, authorizeRole('Admin'), async (req, res) => {
     try {
         const vendor = await vendorModel.findByIdAndDelete({ _id: req.params.id });
         if (!vendor) {

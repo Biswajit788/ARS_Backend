@@ -1,14 +1,14 @@
 const express = require('express');
-
 const bcrypt = require("bcryptjs");
 const app = express();
 const userRoute = express.Router();
+const { authenticateToken, authorizeRole } = require('../authMiddleware');
 
 let userModel = require('../models/userDetails');
 
 // To get list of User
 
-userRoute.route('/').get(async (req, res) => {
+userRoute.route('/').get(authenticateToken, authorizeRole('Admin'), async (req, res) => {
     try {
         const users = await userModel.find().sort({ uid: -1 });
         res.json(users);
@@ -20,13 +20,13 @@ userRoute.route('/').get(async (req, res) => {
 
 // To Add New User
 
-userRoute.route('/addUser').post(async (req, res) => {
+userRoute.route('/addUser').post(authenticateToken, authorizeRole('Admin'), async (req, res) => {
     try {
         const body = req.body;
         const { uid } = body;
 
         const userIsExistCheck = await userModel.findOne({ uid });
-        
+
         if (userIsExistCheck) {
             return res.status(400).json({ message: `User with code ${uid} already exist` });
         }
@@ -48,14 +48,14 @@ userRoute.route('/addUser').post(async (req, res) => {
 
 // To get User details by userID
 
-userRoute.route('/editUser/:id').get(async (req, res) => {
+userRoute.route('/editUser/:id').get(authenticateToken, authorizeRole('Admin'), async (req, res) => {
     try {
         const user = await userModel.findById(req.params.id);
-        
+
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
-        
+
         res.json(user);
     } catch (err) {
         console.error(err);
@@ -65,10 +65,10 @@ userRoute.route('/editUser/:id').get(async (req, res) => {
 
 
 // To Update User details
-userRoute.route('/updateUser/:id').patch(async function (req, res, next) {
+userRoute.route('/updateUser/:id').patch(authenticateToken, authorizeRole('Admin'), async function (req, res, next) {
     try {
         const user = await userModel.findById(req.params.id);
-        
+
         if (!user) {
             return next(new Error('Unable to find User with this ID'));
         }
@@ -85,10 +85,10 @@ userRoute.route('/updateUser/:id').patch(async function (req, res, next) {
         user.status = req.body.status;
         user.password = req.body.password
         // Check if the password field is present in the request and if it has changed
-       /*  if (req.body.password && req.body.password !== user.password) {
-            const salt = await bcrypt.genSalt(10);
-            user.password = await bcrypt.hash(req.body.password, salt);
-        } */
+        /*  if (req.body.password && req.body.password !== user.password) {
+             const salt = await bcrypt.genSalt(10);
+             user.password = await bcrypt.hash(req.body.password, salt);
+         } */
 
         await user.save();
         res.json('User Updated Successfully');
@@ -100,9 +100,9 @@ userRoute.route('/updateUser/:id').patch(async function (req, res, next) {
 
 // To Delete the User
 
-userRoute.route('/deleteUser/:id').get(async (req, res) => {
+userRoute.route('/deleteUser/:id').get(authenticateToken, authorizeRole('Admin'), async (req, res) => {
     try {
-        const user = await userModel.findByIdAndDelete({_id: req.params.id});
+        const user = await userModel.findByIdAndDelete({ _id: req.params.id });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }

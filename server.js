@@ -9,6 +9,7 @@ const config = require('config');
 const seedAdminUser = require('./seeders/adminUserSeeder');
 const port = config.get('server.port');
 const host = config.get('server.host');
+const { authenticateToken, authorizeRole } = require('./authMiddleware');
 
 const JWT_SECRET =
   "hvdvay6ert72839289()aiyg8t87qt723932csc9797whjhcsc9(45900)93883uhefiuh78ttq3ifi78272jbkj?[]]pou89ywe";
@@ -42,6 +43,7 @@ app.use(bodyParser.json());
 const userRoutes = require('./Routes/User.route');
 const vendorRoutes = require('./Routes/Vendor.route');
 const procurementRoutes = require('./Routes/Procurement.route');
+const sopRoutes = require('./Routes/Sop.route');
 const { exit } = require("process");
 
 //Routes Configuration
@@ -50,6 +52,7 @@ app.use('/vendors', vendorRoutes);
 app.use('/items', procurementRoutes);
 app.use('/admin/items', procurementRoutes);
 app.use('/user/items', procurementRoutes);
+app.use('/sops', sopRoutes);
 
 // Serve static files from the 'public' folder
 //app.use(express.static(path.join(__dirname, 'public')));
@@ -58,6 +61,9 @@ app.use('/user/items', procurementRoutes);
 /* app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 }); */
+
+// Serve static files from the "uploads" directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
 //Setup Server Port
@@ -133,19 +139,22 @@ app.post("/login-user", async (req, res) => {
     }
 
     // Password is valid, generate a token
-    const token = jwt.sign({ uid: user.uid, role: user.role }, JWT_SECRET);
-    return res.status(200).json({
-      status: "200",
-      tokenAssign: token,
+    var userInfo = { 
+      uid: user.uid,
       fname: user.fname,
       lname: user.lname,
       desgn: user.desgn,
       email: user.email,
-      role: user.role,
       project: user.project,
-      dept: user.dept,
-      uid: user.uid,
-      flag: user.status,
+      dept: user.dept, 
+      role: user.role,
+      status: user.status,
+    };
+
+    const token = jwt.sign(userInfo, JWT_SECRET);
+    return res.status(200).json({
+      status: "200",
+      token: token,
     });
   } catch (error) {
     // Internal server error
