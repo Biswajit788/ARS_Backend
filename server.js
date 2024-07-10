@@ -14,7 +14,7 @@ const { authenticateToken, authorizeRole } = require('./authMiddleware');
 const JWT_SECRET =
   "hvdvay6ert72839289()aiyg8t87qt723932csc9797whjhcsc9(45900)93883uhefiuh78ttq3ifi78272jbkj?[]]pou89ywe";
 const mongoUrl =
-  "mongodb://0.0.0.0:27017/EPDS"
+  "mongodb://admin:admin123@127.0.0.1:27017/?authMechanism=DEFAULT"
 
 //Creating Express Server
 const app = express();
@@ -57,13 +57,13 @@ app.use('/sops', sopRoutes);
 // Serve static files from the 'public' folder
 //app.use(express.static(path.join(__dirname, 'public')));
 
+// Serve static files from the "uploads" directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Define a route for all requests
 /* app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 }); */
-
-// Serve static files from the "uploads" directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
 //Setup Server Port
@@ -139,14 +139,14 @@ app.post("/login-user", async (req, res) => {
     }
 
     // Password is valid, generate a token
-    var userInfo = { 
+    var userInfo = {
       uid: user.uid,
       fname: user.fname,
       lname: user.lname,
       desgn: user.desgn,
       email: user.email,
       project: user.project,
-      dept: user.dept, 
+      dept: user.dept,
       role: user.role,
       status: user.status,
     };
@@ -159,7 +159,7 @@ app.post("/login-user", async (req, res) => {
   } catch (error) {
     // Internal server error
     console.log("Server Internal Error", error);
-    
+
     return res.status(500).json({
       status: "500",
       message: "Internal Server Error"
@@ -167,40 +167,3 @@ app.post("/login-user", async (req, res) => {
   }
 });
 
-/*Creating or Populating Procurements table in the Database*/
-require("./models/procurementData");
-const Procurement = mongoose.model("procurements");
-app.post("/create", async (req, res) => {
-  const {
-    project, dept, description, category, cate_others, warranty, installation_dt, model, serial, part_no, asset_id, additional_info, supplier,
-    vendoradd, vendor_category, reg_no, condition2, condition5, gstin, reason, order_no, order_dt, price, mode, itemUser,
-    itemLoc, remarks, created_by, status,
-  } = req.body;
-
-  try {
-    if (category === "Hardware") {
-      const count = await Procurement.countDocuments({ asset_id, category });
-
-      if (count !== 0) {
-        return res.json({ error: "Document Already Exist", status: "exist", message: `Asset Id no. ${asset_id} for category ${category} already exist.` });
-      } else {
-        await Procurement.create({
-          project, dept, description, category, cate_others, warranty, installation_dt, model, serial, part_no, asset_id, additional_info,
-          supplier, vendoradd, vendor_category, reg_no, condition2, condition5, gstin, reason, order_no,
-          order_dt, price, mode, itemUser, itemLoc, remarks, created_by, status,
-        });
-        res.send({ status: "Success" });
-      }
-    } else {
-      await Procurement.create({
-        project, dept, description, category, cate_others, warranty, installation_dt, model, serial, part_no, asset_id, additional_info,
-        supplier, vendoradd, vendor_category, reg_no, condition2, condition5, gstin, reason, order_no,
-        order_dt, price, mode, itemUser, itemLoc, remarks, created_by, status,
-      });
-      res.send({ status: "Success" });
-    }
-  } catch (err) {
-    console.error("Error creating procurement record:", err);
-    res.status(500).send("An error occurred while creating the procurement record");
-  }
-});

@@ -1,5 +1,4 @@
 const express = require('express');
-const app = express();
 const procurementRoute = express.Router();
 const { authenticateToken, authorizeRole } = require('../authMiddleware');
 
@@ -30,33 +29,52 @@ procurementRoute.route('/').post(authenticateToken, async function (req, res) {
 
 // To Add New Item
 
-procurementRoute.route('/addItem').post(authenticateToken, async (req, res) => {
+procurementRoute.route('/createItem').post(authenticateToken, async (req, res) => {
+    const {
+        project, dept, description, category, cate_others, installation_dt, assets, licenseStartDate, licenseEndDate, additional_info, supplier,
+        vendoradd, vendor_category, reg_no, caste, gender, gstin, reason, order_no, order_dt, price, mode,
+        remarks, created_by, status,
+    } = req.body;
+
     try {
-        let data = new procurementModel(req.body);
-        
-        // Ensure asset_id and category are defined
-        const { asset_id, category } = data;
-
+        // If category is "Hardware", check for duplicate asset_id
         if (category === "Hardware") {
-            const isExistCheck = await procurementModel.countDocuments({ asset_id, category });
+            for (let asset of assets) {
+                const count = await procurementModel.countDocuments({ asset_id: asset.asset_id, category });
 
-            if (isExistCheck !== 0) {
-                return res.status(409).json({ 
-                    errorMsg: "Document Already Exist", 
-                    status: "exist", 
-                    message: `Asset Id no. ${asset_id} for category ${category} already exists.` 
-                });
-            } else {
-                await data.save();
-                return res.status(200).json({ status: 'success', message: 'New Item Added Successfully' });
+                if (count !== 0) {
+                    return res.json({ error: "Document Already Exist", status: "exist", message: `Asset Id no. ${asset.asset_id} for category ${category} already exist.` });
+                }
             }
-        } else {
-            await data.save();
-            return res.status(200).json({ status: 'success', message: 'New Item Added Successfully' });
         }
+
+        // Save new records to the database
+        const assetPromises = assets.map(asset => {
+            const newAsset = new procurementModel({
+                project, dept, description, category, cate_others, installation_dt,
+                serial: asset.serial,
+                model: asset.model,
+                part_no: asset.part_no,
+                asset_id: asset.asset_id,
+                unitPrice: asset.unitPrice,
+                warranty: asset.warranty+' Yrs',
+                itemUser: asset.itemUser,
+                itemLoc: asset.itemLoc,
+                licenseStartDate,
+                licenseEndDate,
+                additional_info, supplier, vendoradd, vendor_category, reg_no, caste, gender,
+                gstin, reason, order_no, order_dt, price, mode, remarks,
+                created_by, status,
+            });
+            return newAsset.save();
+        });
+
+        await Promise.all(assetPromises);
+        res.send({ status: "Success" });
+
     } catch (err) {
-        console.error("Error occurred while creating the procurement record:", err.message);
-        res.status(500).send({ error: "An error occurred while creating the procurement record", details: err.message });
+        console.error("Error creating asset record:", err);
+        res.status(500).send("An error occurred while creating the asset record");
     }
 });
 
@@ -99,8 +117,8 @@ procurementRoute.route('/updateItem/:id').post(authenticateToken, async (req, re
         data.vendoradd = req.body.vendoradd;
         data.vendor_category = req.body.vendor_category;
         data.reg_no = req.body.reg_no;
-        data.condition2 = req.body.condition2;
-        data.condition5 = req.body.condition5;
+        data.caste = req.body.caste;
+        data.gender = req.body.gender;
         data.gstin = req.body.gstin;
         data.reason = req.body.reason;
         data.order_no = req.body.order_no;

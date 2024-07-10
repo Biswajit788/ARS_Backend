@@ -113,4 +113,25 @@ userRoute.route('/deleteUser/:id').get(authenticateToken, authorizeRole('Admin')
     }
 });
 
+userRoute.route('/validate-password').post(authenticateToken, async (req, res) => {
+    const { uid, currentPassword, newPassword } = req.body;
+
+    try {
+        const user = await userModel.findOne({ uid });
+        if (!user) {
+            return res.status(404).json({ status: "404", error: 'User not found' });
+        }
+        const match = await bcrypt.compare(currentPassword, user.password);
+        if (match) {
+            user.password = newPassword;
+            await user.save();
+            res.status(200).json({ message: 'Password changed successfully' });
+        } else {
+            res.status(401).json({ error: 'Current password is incorrect' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 module.exports = userRoute;

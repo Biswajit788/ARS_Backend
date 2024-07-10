@@ -3,6 +3,8 @@ const sopRoute = express.Router();
 const multer = require('multer');
 const { authenticateToken, authorizeRole } = require('../authMiddleware');
 const sopModel = require('../models/sopDetails');
+const path = require('path');
+const fs = require('fs');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
