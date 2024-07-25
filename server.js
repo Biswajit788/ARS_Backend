@@ -44,6 +44,7 @@ const userRoutes = require('./Routes/User.route');
 const vendorRoutes = require('./Routes/Vendor.route');
 const procurementRoutes = require('./Routes/Procurement.route');
 const sopRoutes = require('./Routes/Sop.route');
+const assetLogRoutes = require('./Routes/AssetLog.route');
 const { exit } = require("process");
 
 //Routes Configuration
@@ -53,6 +54,8 @@ app.use('/items', procurementRoutes);
 app.use('/admin/items', procurementRoutes);
 app.use('/user/items', procurementRoutes);
 app.use('/sops', sopRoutes);
+app.use('/logs', assetLogRoutes);
+
 
 // Serve static files from the 'public' folder
 //app.use(express.static(path.join(__dirname, 'public')));
