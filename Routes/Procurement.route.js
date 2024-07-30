@@ -5,6 +5,7 @@ const { authenticateToken, authorizeRole } = require('../authMiddleware');
 let procurementModel = require('../models/procurementData');
 let AssetLocationLog = require('../models/assetLocationLog');
 let AssetTransfer = require('../models/assetTransferData');
+let AssetTransferRequest = require('../models/assetTransferRequest');
 
 
 const getTransferCode = (transferType) => {
@@ -80,7 +81,7 @@ procurementRoute.route('/createItem').post(authenticateToken, async (req, res) =
                 licenseEndDate,
                 additional_info, supplier, vendoradd, vendor_category, reg_no, caste, gender,
                 gstin, reason, order_no, order_dt, price, mode, remarks,
-                created_by, status,
+                created_by, status, transFlag: 0,
             });
             return newAsset.save();
         });
@@ -94,6 +95,17 @@ procurementRoute.route('/createItem').post(authenticateToken, async (req, res) =
     }
 });
 
+
+procurementRoute.route('/transferRequestCount').get(authenticateToken, async (req, res) => {
+    try {
+        const projectFilter = req.query.location;
+        const count = await AssetTransferRequest.countDocuments({ newLocation: projectFilter, status: "Pending" });
+        res.status(200).json({ count });
+    } catch (error) {
+        console.error('Error fetching transfer request count:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
 
 // To get Item details by ID
 
@@ -160,13 +172,21 @@ procurementRoute.route('/updateItem/:id').post(authenticateToken, async (req, re
 //To mark Item for Transfer
 procurementRoute.route('/markItem/:id').get(authenticateToken, async (req, res) => {
     try {
-        const item = await procurementModel.findById({ _id: req.params.id });
-        if (item.status != '0') {
-            res.sendStatus(201);
+        const item = await procurementModel.findById(req.params.id);
+        if (!item) {
+            return res.status(404).json({ message: 'Item not found' });
+        }
+
+        if (item.status != '0' && item.transFlag == '0') {
+            res.sendStatus(201); // Item already marked for transfer action
+        } else if (item.status == '0' && item.transFlag != '0') {
+            res.status(601).json({ message: 'Transfer action in process' });
         } else {
-            const updatedItem = await procurementModel.findByIdAndUpdate({ _id: req.params.id }, { status: '1' }, { new: true });
+            const updatedItem = await procurementModel.findByIdAndUpdate(req.params.id, { status: '1' }, { new: true });
             if (updatedItem) {
-                res.sendStatus(200);
+                res.sendStatus(200); // Item marked for transfer action successfully
+            } else {
+                res.status(500).json({ message: 'Failed to update item status' });
             }
         }
     } catch (err) {
@@ -198,6 +218,20 @@ procurementRoute.route('/pendingTransfer').get(authenticateToken, authorizeRole(
     try {
         let query = { project: projectFilter, status: "1" };
         const data = await procurementModel.find(query).sort({ _id: -1, createdAt: -1 });
+        res.json(data);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'An error occurred while fetching pending transfers' });
+    }
+});
+
+// To get list of Pending Transfer Request 
+procurementRoute.route('/pendingTransferRequest').get(authenticateToken, authorizeRole('Admin'), async (req, res) => {
+    const locationFilter = req.query.location;
+    //const deptFilter = req.query.dept;
+    try {
+        let query = { newLocation: locationFilter };
+        const data = await AssetTransferRequest.find(query).sort({ _id: -1, createdAt: -1 });
         res.json(data);
     } catch (err) {
         console.error(err);
@@ -241,80 +275,182 @@ procurementRoute.route('/:id').get(authenticateToken, authorizeRole('Admin'), as
     }
 });
 
-procurementRoute.route('/transferAsset/:id').post(authenticateToken, authorizeRole('Admin'), async (req, res) => {
+procurementRoute.route('/transferRequest/:id').post(authenticateToken, authorizeRole('Admin'), async (req, res) => {
+    const { transferType, transferCase, newLocation, transferRemarks, ...currentItem } = req.body;
+    const itemId = req.params.id;
     try {
-        const data = await procurementModel.findById(req.params.id);
+        if (transferType === "Inter Project Transfer") {
+            const transferRequest = new AssetTransferRequest({
+                itemId: currentItem._id,
+                assetId: currentItem.asset_id,
+                asset_description: currentItem.itemCategory,
+                model: currentItem.model,
+                serial: currentItem.serial,
+                oldLocation: currentItem.project,
+                transferType,
+                newLocation,
+                transferRemarks,
+                status: 'Pending',
+            });
+            await transferRequest.save();
 
-        if (!data) {
-            return res.status(404).json({ error: 'Unable to find Item with this ID' });
-        }
-
-        const oldLocation = data.project;
-        const newLocation = req.body.project;
-        const transferType = req.body.transferType;
-        const transferCase = req.body.transferCase;
-        const transferRemarks = req.body.transferRemarks;
-
-        if (transferType === "Inter Project Transfer" && oldLocation !== newLocation) {
-            // First case: Inter Project Transfer
-            data.project = newLocation;
+            const data = await procurementModel.findById(itemId);
+            if (!data) {
+                return res.status(404).json({ error: 'Unable to find Item with this ID' });
+            }
             data.status = 0;
+            data.transFlag = 1;
             await data.save();
 
-            const locationLog = new AssetLocationLog({
-                assetRefId: data._id,
-                asset_description: data.itemCategory,
-                assetId: data.asset_id,
-                oldLocation,
-                newLocation,
-                transfer_remarks: transferRemarks,
-            });
-            await locationLog.save();
-
-            res.json('Item updated and location log created successfully');
+            return res.status(200).json({ message: 'Transfer request created successfully' });
         } else {
             // Second case: Other transfer types
             const newTransfer = new AssetTransfer({
-                assetRefId: data._id,
+                assetRefId: currentItem._id,
                 transfer_type: transferType,
                 transfer_code: getTransferCode(transferType),
                 transfer_case: transferCase,
                 transfer_remarks: transferRemarks,
-                asset_id: data.asset_id,
-                category: data.category,
-                itemCategory: data.itemCategory,
-                model: data.model,
-                serial: data.serial,
-                part_no: data.part_no,
-                unitPrice: data.unitPrice,
-                warranty: data.warranty,
-                installation_dt: data.installation_dt,
-                licenseStartDate: data.licenseStartDate,
-                licenseEndDate: data.licenseEndDate,
-                additional_info: data.additional_info,
-                last_project: data.project,
-                last_dept: data.dept,
-                supplier: data.supplier,
-                vendoradd: data.vendoradd,
-                vendor_category: data.vendor_category,
-                caste: data.caste,
-                gender: data.gender,
-                reg_no: data.reg_no,
-                gstin: data.gstin,
-                mode: data.mode,
-                title: data.description,
-                order_no: data.order_no,
-                order_dt: data.order_dt,
-                order_value: data.price,
+                asset_id: currentItem.asset_id,
+                category: currentItem.category,
+                itemCategory: currentItem.itemCategory,
+                model: currentItem.model,
+                serial: currentItem.serial,
+                part_no: currentItem.part_no,
+                unitPrice: currentItem.unitPrice,
+                warranty: currentItem.warranty,
+                installation_dt: currentItem.installation_dt,
+                licenseStartDate: currentItem.licenseStartDate,
+                licenseEndDate: currentItem.licenseEndDate,
+                additional_info: currentItem.additional_info,
+                last_project: currentItem.project,
+                last_dept: currentItem.dept,
+                supplier: currentItem.supplier,
+                vendoradd: currentItem.vendoradd,
+                vendor_category: currentItem.vendor_category,
+                caste: currentItem.caste,
+                gender: currentItem.gender,
+                reg_no: currentItem.reg_no,
+                gstin: currentItem.gstin,
+                mode: currentItem.mode,
+                title: currentItem.description,
+                order_no: currentItem.order_no,
+                order_dt: currentItem.order_dt,
+                order_value: currentItem.price,
             });
             await newTransfer.save();
             await procurementModel.findByIdAndDelete(req.params.id);
 
-            res.json('Asset transferred and original item deleted successfully');
+            res.json({message: 'Asset transferred and removed from the Asset database.'});
         }
     } catch (err) {
         res.status(400).json({ error: 'Unable to Update Item', details: err.message });
     }
 });
+
+procurementRoute.route('/acceptTransferRequest/:requestId').post(authenticateToken, authorizeRole('Admin'), async (req, res) => {
+    const requestId = req.params.requestId;
+
+    try {
+        const transferRequest = await AssetTransferRequest.findById(requestId);
+
+        if (!transferRequest || transferRequest.status !== 'Pending') {
+            return res.status(404).json({ error: 'Transfer request not found or already processed' });
+        }
+
+        // Update the Procurement table based on the transfer request details
+        const updatedItem = await procurementModel.findByIdAndUpdate(
+            transferRequest.itemId,
+            {
+                project: transferRequest.newLocation,
+                status: '0',
+                transFlag: '0',
+            },
+            { new: true }
+        );
+
+        if (updatedItem) {
+            // Update transfer request status to Accepted
+            transferRequest.status = 'Completed';
+            await transferRequest.save();
+
+            // Create an entry in the AssetLocationLog table
+            const locationLog = new AssetLocationLog({
+                assetRefId: transferRequest.itemId,
+                assetId: transferRequest.assetId,
+                asset_description: transferRequest.asset_description,
+                serial: transferRequest.serial,
+                model: transferRequest.model,
+                oldLocation: transferRequest.oldLocation,
+                transferType: transferRequest.transferType,
+                newLocation: transferRequest.newLocation,
+                transfer_remarks: transferRequest.transferRemarks,
+                status: 'Accepted',
+                rejection_remarks: 'NA',
+            });
+            await locationLog.save();
+
+            return res.status(200).json({ message: 'Transfer request accepted and table updated successfully', updatedItem });
+        } else {
+            return res.status(404).json({ error: 'Item not found' });
+        }
+    } catch (error) {
+        console.error('Error accepting transfer request:', error);
+        return res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+procurementRoute.route('/rejectTransferRequest/:requestId').post(authenticateToken, authorizeRole('Admin'), async (req, res) => {
+    const requestId = req.params.requestId;
+    const { rejectionReason } = req.body;
+  
+    try {
+      const transferRequest = await AssetTransferRequest.findById(requestId);
+  
+      if (!transferRequest || transferRequest.status !== 'Pending') {
+        return res.status(404).json({ error: 'Transfer request not found or already processed' });
+      }
+  
+      // Update the Procurement table to set transFlag to 0
+      const updatedItem = await procurementModel.findByIdAndUpdate(
+        transferRequest.itemId,
+        {
+          transFlag: '0',
+        },
+        { new: true }
+      );
+  
+      if (updatedItem) {
+        // Update transfer request status to Rejected
+        transferRequest.status = 'Rejected';
+        await transferRequest.save();
+  
+        // Create an entry in the AssetLocationLog table with rejection remarks
+        const assetLocationLog = new AssetLocationLog({
+            assetRefId: transferRequest.itemId,
+            assetId: transferRequest.assetId,
+            asset_description: transferRequest.asset_description,
+            serial: transferRequest.serial,
+            model: transferRequest.model,
+            oldLocation: transferRequest.oldLocation,
+            transferType: transferRequest.transferType,
+            newLocation: transferRequest.newLocation,
+            transfer_remarks: transferRequest.transferRemarks,
+            status: 'Rejected',
+            rejection_remarks: rejectionReason,
+        });
+  
+        await assetLocationLog.save();
+  
+        return res.status(200).json({ message: 'Transfer request rejected and table updated successfully', updatedItem });
+      } else {
+        return res.status(404).json({ error: 'Item not found' });
+      }
+    } catch (error) {
+      console.error('Error rejecting transfer request:', error);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
 
 module.exports = procurementRoute;

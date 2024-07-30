@@ -35,6 +35,7 @@ const ProcurementDataSchema = new mongoose.Schema(
         remarks: String,
         created_by: String,
         status: {type: Number},
+        transFlag: {type: Number},
     },
     {
         timestamps: true,
