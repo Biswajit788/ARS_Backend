@@ -4,7 +4,7 @@ const { authenticateToken, authorizeRole } = require('../authMiddleware');
 const assetLogModel = require('../models/assetLocationLog');
 const disposedAssetLogModel = require('../models/assetTransferData');
 
-assetLogRoute.get('/assetlogs', authenticateToken, authorizeRole('Admin'), async (req, res) => {
+assetLogRoute.get('/assetlogs', authenticateToken, authorizeRole('Admin' , 'Super Admin'), async (req, res) => {
     const { assetId } = req.query;
     try {
         let query = {};
@@ -19,7 +19,7 @@ assetLogRoute.get('/assetlogs', authenticateToken, authorizeRole('Admin'), async
     }
 });
 
-assetLogRoute.get('/disposedassetlogs', authenticateToken, authorizeRole('Admin'), async (req, res) => {
+assetLogRoute.get('/disposedassetlogs', authenticateToken, authorizeRole('Admin' , 'Super Admin'), async (req, res) => {
     const { transferCode } = req.query;
     try {
         let query = {};

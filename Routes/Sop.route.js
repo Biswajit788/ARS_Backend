@@ -29,7 +29,7 @@ sopRoute.route('/files').get(authenticateToken, async (req, res) => {
 });
 
 // POST upload SOP file (requires authentication and 'Admin' role)
-sopRoute.route('/upload').post(authenticateToken, authorizeRole('Admin'), upload.single('file'), async (req, res) => {
+sopRoute.route('/upload').post(authenticateToken, authorizeRole('Super Admin'), upload.single('file'), async (req, res) => {
   const { title, module } = req.body;
   const { filename, path } = req.file;
 
@@ -49,7 +49,7 @@ sopRoute.route('/upload').post(authenticateToken, authorizeRole('Admin'), upload
 });
 
 // GET view SOP file by ID (requires authentication and 'Admin' role)
-sopRoute.route('/view/:fileId').get(authenticateToken, authorizeRole('Admin'), async (req, res) => {
+sopRoute.route('/view/:fileId').get(authenticateToken, authorizeRole('Super Admin'), async (req, res) => {
   try {
     const file = await sopModel.findById(req.params.fileId);
     if (!file) {
@@ -77,7 +77,7 @@ sopRoute.route('/download/:fileId').get(authenticateToken, async (req, res) => {
 });
 
 // PUT update SOP file by ID (requires authentication and 'Admin' role)
-sopRoute.route('/update/:id').put(authenticateToken, authorizeRole('Admin'), upload.single('file'), async (req, res) => {
+sopRoute.route('/update/:id').put(authenticateToken, authorizeRole('Super Admin'), upload.single('file'), async (req, res) => {
   const { id } = req.params;
   const { title, module } = req.body;
 

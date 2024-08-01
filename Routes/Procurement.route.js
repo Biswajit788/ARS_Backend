@@ -29,10 +29,15 @@ procurementRoute.route('/').post(authenticateToken, async function (req, res) {
     const roleFilter = req.query.role;
 
     try {
-        let query;
-        if (roleFilter === "Admin") {
+        let query = {};
+        if (roleFilter === "Super Admin") {
+            // Super Admin gets full access without any filters
+            query = {};
+        } else if (roleFilter === "Admin") {
+            // Admins are filtered by project
             query = { project: projectFilter };
         } else {
+            // Users are filtered by project and department
             query = { project: projectFilter, dept: deptFilter };
         }
 
@@ -43,6 +48,7 @@ procurementRoute.route('/').post(authenticateToken, async function (req, res) {
         res.status(500).send("An error occurred while fetching the data.");
     }
 });
+
 
 // To Add New Item
 
@@ -170,7 +176,7 @@ procurementRoute.route('/updateItem/:id').post(authenticateToken, async (req, re
 });
 
 //To mark Item for Transfer
-procurementRoute.route('/markItem/:id').get(authenticateToken, async (req, res) => {
+procurementRoute.route('/markItem/:id').get(authenticateToken, authorizeRole('Admin' , 'Super Admin'), async (req, res) => {
     try {
         const item = await procurementModel.findById(req.params.id);
         if (!item) {
@@ -197,7 +203,7 @@ procurementRoute.route('/markItem/:id').get(authenticateToken, async (req, res) 
 
 // To Delete the Item
 
-procurementRoute.route('/deleteItem/:id').get(authenticateToken, authorizeRole('Admin'), async (req, res) => {
+procurementRoute.route('/deleteItem/:id').get(authenticateToken, authorizeRole('Admin' , 'Super Admin'), async (req, res) => {
     try {
         const result = await procurementModel.findByIdAndDelete({ _id: req.params.id });
         if (!result) {
@@ -212,7 +218,7 @@ procurementRoute.route('/deleteItem/:id').get(authenticateToken, authorizeRole('
 
 // To get list of Pending Marked Transfer Item 
 
-procurementRoute.route('/pendingTransfer').get(authenticateToken, authorizeRole('Admin'), async (req, res) => {
+procurementRoute.route('/pendingTransfer').get(authenticateToken, authorizeRole('Admin' , 'Super Admin'), async (req, res) => {
     const projectFilter = req.query.project;
     //const deptFilter = req.query.dept;
     try {
@@ -226,7 +232,7 @@ procurementRoute.route('/pendingTransfer').get(authenticateToken, authorizeRole(
 });
 
 // To get list of Pending Transfer Request 
-procurementRoute.route('/pendingTransferRequest').get(authenticateToken, authorizeRole('Admin'), async (req, res) => {
+procurementRoute.route('/pendingTransferRequest').get(authenticateToken, authorizeRole('Admin' , 'Super Admin'), async (req, res) => {
     const locationFilter = req.query.location;
     //const deptFilter = req.query.dept;
     try {
@@ -241,7 +247,7 @@ procurementRoute.route('/pendingTransferRequest').get(authenticateToken, authori
 
 //To remove Item from TransferList
 
-procurementRoute.route('/removeTransferItemList/:id').get(authenticateToken, authorizeRole('Admin'), async (req, res) => {
+procurementRoute.route('/removeTransferItemList/:id').get(authenticateToken, authorizeRole('Admin' , 'Super Admin'), async (req, res) => {
     try {
         const data = await procurementModel.findByIdAndUpdate(
             { _id: req.params.id },
@@ -259,7 +265,7 @@ procurementRoute.route('/removeTransferItemList/:id').get(authenticateToken, aut
     }
 });
 
-procurementRoute.route('/:id').get(authenticateToken, authorizeRole('Admin'), async (req, res) => {
+procurementRoute.route('/:id').get(authenticateToken, authorizeRole('Admin' , 'Super Admin'), async (req, res) => {
     try {
         const itemId = req.params.id;
         const item = await procurementModel.findById(itemId);
@@ -275,7 +281,7 @@ procurementRoute.route('/:id').get(authenticateToken, authorizeRole('Admin'), as
     }
 });
 
-procurementRoute.route('/transferRequest/:id').post(authenticateToken, authorizeRole('Admin'), async (req, res) => {
+procurementRoute.route('/transferRequest/:id').post(authenticateToken, authorizeRole('Admin' , 'Super Admin'), async (req, res) => {
     const { transferType, transferCase, newLocation, transferRemarks, ...currentItem } = req.body;
     const itemId = req.params.id;
     try {
@@ -348,7 +354,7 @@ procurementRoute.route('/transferRequest/:id').post(authenticateToken, authorize
     }
 });
 
-procurementRoute.route('/acceptTransferRequest/:requestId').post(authenticateToken, authorizeRole('Admin'), async (req, res) => {
+procurementRoute.route('/acceptTransferRequest/:requestId').post(authenticateToken, authorizeRole('Admin' , 'Super Admin'), async (req, res) => {
     const requestId = req.params.requestId;
 
     try {
@@ -400,7 +406,7 @@ procurementRoute.route('/acceptTransferRequest/:requestId').post(authenticateTok
     }
 });
 
-procurementRoute.route('/rejectTransferRequest/:requestId').post(authenticateToken, authorizeRole('Admin'), async (req, res) => {
+procurementRoute.route('/rejectTransferRequest/:requestId').post(authenticateToken, authorizeRole('Admin' , 'Super Admin'), async (req, res) => {
     const requestId = req.params.requestId;
     const { rejectionReason } = req.body;
   

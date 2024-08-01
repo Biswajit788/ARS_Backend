@@ -8,7 +8,7 @@ let userModel = require('../models/userDetails');
 
 // To get list of User
 
-userRoute.route('/').get(authenticateToken, authorizeRole('Admin'), async (req, res) => {
+userRoute.route('/').get(authenticateToken, authorizeRole('Super Admin'), async (req, res) => {
     try {
         const users = await userModel.find().sort({ uid: -1 });
         res.json(users);
@@ -20,7 +20,7 @@ userRoute.route('/').get(authenticateToken, authorizeRole('Admin'), async (req, 
 
 // To Add New User
 
-userRoute.route('/addUser').post(authenticateToken, authorizeRole('Admin'), async (req, res) => {
+userRoute.route('/addUser').post(authenticateToken, authorizeRole('Super Admin'), async (req, res) => {
     try {
         const body = req.body;
         const { uid } = body;
@@ -48,7 +48,7 @@ userRoute.route('/addUser').post(authenticateToken, authorizeRole('Admin'), asyn
 
 // To get User details by userID
 
-userRoute.route('/editUser/:id').get(authenticateToken, authorizeRole('Admin'), async (req, res) => {
+userRoute.route('/editUser/:id').get(authenticateToken, authorizeRole('Super Admin'), async (req, res) => {
     try {
         const user = await userModel.findById(req.params.id);
 
@@ -65,7 +65,7 @@ userRoute.route('/editUser/:id').get(authenticateToken, authorizeRole('Admin'), 
 
 
 // To Update User details
-userRoute.route('/updateUser/:id').patch(authenticateToken, authorizeRole('Admin'), async function (req, res, next) {
+userRoute.route('/updateUser/:id').patch(authenticateToken, authorizeRole('Super Admin'), async function (req, res, next) {
     try {
         const user = await userModel.findById(req.params.id);
 
@@ -100,7 +100,7 @@ userRoute.route('/updateUser/:id').patch(authenticateToken, authorizeRole('Admin
 
 // To Delete the User
 
-userRoute.route('/deleteUser/:id').get(authenticateToken, authorizeRole('Admin'), async (req, res) => {
+userRoute.route('/deleteUser/:id').get(authenticateToken, authorizeRole('Super Admin'), async (req, res) => {
     try {
         const user = await userModel.findByIdAndDelete({ _id: req.params.id });
         if (!user) {

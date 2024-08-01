@@ -51,6 +51,7 @@ const { exit } = require("process");
 app.use('/users', userRoutes);
 app.use('/vendors', vendorRoutes);
 app.use('/items', procurementRoutes);
+app.use('/superadmin/items', procurementRoutes);
 app.use('/admin/items', procurementRoutes);
 app.use('/user/items', procurementRoutes);
 app.use('/sops', sopRoutes);
@@ -142,7 +143,7 @@ app.post("/login-user", async (req, res) => {
     }
 
     // Password is valid, generate a token
-    var userInfo = {
+    var createToken = {
       uid: user.uid,
       fname: user.fname,
       lname: user.lname,
@@ -154,7 +155,7 @@ app.post("/login-user", async (req, res) => {
       status: user.status,
     };
 
-    const token = jwt.sign(userInfo, JWT_SECRET);
+    const token = jwt.sign(createToken, JWT_SECRET);
     return res.status(200).json({
       status: "200",
       token: token,
